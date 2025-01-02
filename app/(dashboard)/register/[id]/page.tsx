@@ -160,12 +160,12 @@ export default function RegisterTree({ params }: { params: Promise<{ id: string 
       </div>
 
       {isPopupVisible && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center">
-            <h2 className="text-xl font-bold mb-4">Register Success!</h2>
-            <p>Redirecting to the update page...</p>
-          </div>
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center">
+        <div className="bg-black p-8 rounded-lg shadow-lg text-center">
+          <h2 className="text-2xl font-bold mb-4 text-slate-500 font-roboto">Register Success!</h2>
+          <p className="text-white font-roboto_mono">Tree updated successfully. Redirecting to update page...</p>
         </div>
+      </div>
       )}
     </div>
   );
