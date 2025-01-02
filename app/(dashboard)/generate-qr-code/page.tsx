@@ -9,16 +9,23 @@ import { saveAs } from 'file-saver';
 import QRCode from 'qrcode';
 
 export default function BulkQRCodeGenerator() {
-  const [qrCount, setQrCount] = useState(1); // Number of QR codes to generate
+  const [qrCount, setQrCount] = useState<number | null>(1); // Allow qrCount to be a number or null for invalid state
   const [qrCodes, setQrCodes] = useState<string[]>([]); // Store generated tree names/IDs
+  const [errorMessage, setErrorMessage] = useState<string>(''); // Store error message
 
   const handleGenerateQRs = () => {
+    if (qrCount === null || qrCount <= 0) {
+      setErrorMessage('Please input a valid amount.');
+      return;
+    }
+
     const generatedCodes: string[] = [];
     for (let i = 0; i < qrCount; i++) {
       const uniqueId = `tree-${Math.random().toString(36).substr(2, 9)}`;
       generatedCodes.push(uniqueId);
     }
     setQrCodes(generatedCodes);
+    setErrorMessage(''); // Clear the error message when QR codes are generated
   };
 
   const generatePDF = async () => {
@@ -70,24 +77,35 @@ export default function BulkQRCodeGenerator() {
       return '';  // Return an empty string if there's an error
     }
   };
-  
+
   return (
     <div className="bg-black">
       <div className="flex flex-col items-center text-center min-h-screen mt-36 p-4">
-  <h1 className="font-roboto_mono text-white text-3xl font-bold mb-6">Generate Multiple QR Codes</h1>
+        <h1 className="font-roboto_mono text-white text-3xl font-bold mb-6">Generate Multiple QR Codes</h1>
 
-  <div className="mb-4 flex flex-col items-center">
-    <label className="block text-lg text-white mb-2">Number of QR Codes</label>
-    <Input
-      type="number"
-      min="1"
-      value={qrCount}
-      onChange={(e) => setQrCount(Number(e.target.value))}
-      className="w-40 border text-white border-gray-300 rounded justify-center items-center"
-    />
-  </div>
+        <div className="mb-4 flex flex-col items-center">
+          <label className="block text-lg text-white mb-2">Number of QR Codes</label>
+          <Input
+            type="number"
+            min="1"
+            value={qrCount ?? ''} // If qrCount is null, show empty value
+            onChange={(e) => {
+              const value = e.target.value;
+              const numericValue = value === '' ? null : Number(value);
+              setQrCount(numericValue); // Set as null if input is empty
+              setErrorMessage(''); // Clear error message when user modifies the input
+            }}
+            className="w-40 border text-white border-gray-300 rounded justify-center items-center text-xs font-roboto_mono"
+            placeholder="Input number"
+            onBlur={() => {
+              if (qrCount === null) setQrCount(1); // Default to 1 if no input
+            }}
+          />
+        </div>
 
-        <Button onClick={handleGenerateQRs} className=" text-white rounded w-40 justify-center">
+        {errorMessage && <p className="text-red-500 font-roboto">{errorMessage}</p>} {/* Show the error message if there's an issue */}
+
+        <Button onClick={handleGenerateQRs} className="text-white rounded w-40 justify-center">
           Generate QR Code(s)
         </Button>
 
