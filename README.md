@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
@@ -302,3 +303,6 @@ kirai
 ```
 
 The Cisadang River is a major waterway with a length of 138 kilometers through the provinces of West Java and Banten on the island of Java, Indonesia. Its journey begins at Mount Pangrango and Mount Salak, which have their source upstream. From there, it flows through  Bogor City and Bogor Regency in West Java, and then through various towns in Banten Province before finally reaching the Java Sea. The river plays a vital role in the livelihoods of over 3 million people living in the surrounding areas. It serves several purposes, including flood prevention by collecting  and providing treated drinking water for local residents through rainwater (Kharisma et al., 2022). With a drainage area of ​​1,500 square kilometers, the Cisadang River is one of the most important rivers supporting the ecological and human systems in West Java and Banten.
+=======
+# kirai-website
+>>>>>>> origin/main
