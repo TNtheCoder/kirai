@@ -1,21 +1,18 @@
-"use server";
-
 import * as admin from 'firebase-admin';
 
-// Import the service account key
-import serviceAccount from '@/lib/firebase-service-account.json';
+// Parse the Firebase service account JSON from environment variables
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '{}');
 
-// Get the project ID from environment variables
-const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-if (!projectId) {
-  throw new Error('Project ID is not set in environment variables');
+// Make sure the service account details are valid
+if (!serviceAccount.private_key || !serviceAccount.client_email || !serviceAccount.project_id) {
+  throw new Error('Invalid Firebase service account details in environment variables');
 }
 
-// Initialize Firebase Admin if not already initialized
+// Initialize Firebase Admin SDK if not already initialized
 if (!admin.apps.length) {
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-    projectId,
+    credential: admin.credential.cert(serviceAccount),
+    projectId: serviceAccount.project_id,
   });
 }
 
@@ -42,5 +39,3 @@ export const verifyToken = async (clerkToken: string): Promise<string> => {
     throw new Error('Token generation failed');
   }
 };
-
-
