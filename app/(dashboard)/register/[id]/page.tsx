@@ -3,35 +3,41 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { ref, get, update } from 'firebase/database';
+import { ref, get, update, serverTimestamp } from 'firebase/database';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { serverTimestamp } from 'firebase/database'; // Import serverTimestamp
-import React from 'react';
+import Spinner from '@/components/ui/spinner';
 
 export default function RegisterTree({ params }: { params: Promise<{ id: string }> }) {
   const [treeData, setTreeData] = useState({ name: '', height: '' });
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [errors, setErrors] = useState({ name: '', height: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLocationLoading, setIsLocationLoading] = useState(true);
+  const [treeId, setTreeId] = useState<string | null>(null);
+  const [isPopupVisible, setIsPopupVisible] = useState(false); // State for popup visibility
   const router = useRouter();
 
-  // Unwrap params using React.use() to access treeId
-  const { id } = React.use(params); // React.use() unwraps the Promise
+  useEffect(() => {
+    const resolveParams = async () => {
+      const unwrappedParams = await params;
+      setTreeId(unwrappedParams.id);
+    };
+    resolveParams();
+  }, [params]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!treeId) return;
 
     const fetchTreeData = async () => {
       try {
-        const treeRef = ref(db, `trees/${id}`);
+        const treeRef = ref(db, `trees/${treeId}`);
         const snapshot = await get(treeRef);
 
         if (snapshot.exists()) {
           setTreeData(snapshot.val());
         } else {
-          // If tree does not exist, redirect to registration page
-          router.push(`/register/${id}`);
+          router.push(`/register/${treeId}`);
         }
       } catch (error) {
         console.error('Failed to fetch tree data:', error);
@@ -39,9 +45,8 @@ export default function RegisterTree({ params }: { params: Promise<{ id: string 
     };
 
     fetchTreeData();
-  }, [id, router]);
+  }, [treeId, router]);
 
-  // Fetch geolocation when the component mounts
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -50,13 +55,16 @@ export default function RegisterTree({ params }: { params: Promise<{ id: string 
             lat: position.coords.latitude,
             lon: position.coords.longitude,
           });
+          setIsLocationLoading(false);
         },
         (error) => {
           console.error('Error getting geolocation:', error);
+          setIsLocationLoading(false);
         }
       );
     } else {
       console.error('Geolocation is not supported by this browser.');
+      setIsLocationLoading(false);
     }
   }, []);
 
@@ -73,7 +81,6 @@ export default function RegisterTree({ params }: { params: Promise<{ id: string 
 
     setErrors(newErrors);
 
-    // Return true if no errors
     return !newErrors.name && !newErrors.height;
   };
 
@@ -87,17 +94,22 @@ export default function RegisterTree({ params }: { params: Promise<{ id: string 
     setIsSubmitting(true);
 
     try {
-      // Prepare the data with timestamp
       const newTreeData = {
         ...treeData,
         location,
-        timestamp: serverTimestamp(), // Add timestamp to the data
+        timestamp: serverTimestamp(),
       };
 
-      // Update tree information in Firebase
-      await update(ref(db, `trees/${id}`), newTreeData);
+      await update(ref(db, `trees/${treeId}`), newTreeData);
 
-      router.push(`/update/${id}`);
+      // Show success popup
+      setIsPopupVisible(true);
+
+      // Redirect to update page after showing the popup for a brief time
+      setTimeout(() => {
+        router.push(`/update/${treeId}`);
+        setIsPopupVisible(false); // Hide popup after routing
+      }, 2000);
     } catch (error) {
       console.error('Failed to update tree:', error);
     } finally {
@@ -106,10 +118,9 @@ export default function RegisterTree({ params }: { params: Promise<{ id: string 
   };
 
   return (
-    <div className="bg-black min-h-screen w-svw flex justify-center">
-      <div className="p-4 mt-36 justify-center items-center w-1/2">
+    <div className="bg-black min-h-screen w-full flex justify-center">
+      <div className="p-4 mt-36 w-1/2">
         <h1 className="text-xl font-bold font-roboto text-white mb-4">Register Tree</h1>
-
         <form onSubmit={handleSubmit} className="space-y-4 text-white">
           <div>
             <Input
@@ -120,7 +131,6 @@ export default function RegisterTree({ params }: { params: Promise<{ id: string 
             />
             {errors.name && <p className="text-red-500">{errors.name}</p>}
           </div>
-
           <div>
             <Input
               type="text"
@@ -130,19 +140,33 @@ export default function RegisterTree({ params }: { params: Promise<{ id: string 
             />
             {errors.height && <p className="text-red-500">{errors.height}</p>}
           </div>
-
-          {location && (
-            <div>
-              <p>Latitude: {location.lat}</p>
-              <p>Longitude: {location.lon}</p>
+          {isLocationLoading ? (
+            <div className="flex items-center space-x-2">
+              <Spinner />
+              <p className="font-roboto_mono">Location loading...</p>
             </div>
+          ) : (
+            location && (
+              <div>
+                <p className="font-roboto_mono">Latitude: {location.lat}</p>
+                <p className="font-roboto_mono">Longitude: {location.lon}</p>
+              </div>
+            )
           )}
-
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Submitting...' : 'Submit'}
+            {isSubmitting ? <Spinner className="w-20 h-10" /> : 'Submit'}
           </Button>
         </form>
       </div>
+
+      {isPopupVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+            <h2 className="text-xl font-bold mb-4">Register Success!</h2>
+            <p>Redirecting to the update page...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
