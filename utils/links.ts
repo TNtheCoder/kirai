@@ -1,15 +1,19 @@
 export const navLinks = [
     {
         label: 'Update',
-        href: '/database'
+        href: '/update'
     },
     {
         label: 'Register',
-        href: '/code-generator'
+        href: '/register'
     },
     {
         label: 'Generate QR Code',
-        href: '/login'
+        href: '/generate-qr-code'
+    },
+    {
+        label: 'Trees',
+        href:'/trees'
     },
 
-]
+];

@@ -3,17 +3,19 @@ import { roboto_mono, leckerli } from "./fonts";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+
 export default function Home() {
   return (
+
     <div className="bg-black">
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <h1 className={`${leckerli.className} text-7xl text-white`}>Kirai</h1>
-        <h2 className={`${roboto_mono.className} lg:text-2xl text-xl text-center justify-center text-white leading-10`}>
+        <h1 className={`font-leckerli text-7xl text-white`}>Kirai</h1>
+        <h2 className={`font-roboto_mono lg:text-2xl text-xl text-center justify-center text-white leading-10`}>
           Tree Monitoring for Cisadane
         </h2>
         <div className="flex flex-row gap-4 mt-7">
           <Button variant="default">
-            <Link href="/homepage" className="block py-2 px-3 relative transition duration-300 underline-effect">
+            <Link href="/home" className="block py-2 px-3 relative transition duration-300 underline-effect">
               Get Started
             </Link>
           </Button>
@@ -31,4 +33,4 @@ export default function Home() {
       </div>
     </div>
   );
-}
+};
