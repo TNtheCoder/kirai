@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ref, get, update } from 'firebase/database';
+import { ref, get, update, serverTimestamp } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import React from 'react';
 import Spinner from '@/components/ui/spinner';
 
 export default function UpdateTree({ params }: { params: Promise<{ id: string }> }) {
-  const [treeData, setTreeData] = useState({ name: '', height: '' });
+  const [treeData, setTreeData] = useState({ name: '', height: '', previousHeight: '', lastUpdated: '' });
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [isLocationLoading, setIsLocationLoading] = useState(true);
   const [errors, setErrors] = useState({ height: '' });
@@ -18,7 +18,6 @@ export default function UpdateTree({ params }: { params: Promise<{ id: string }>
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const router = useRouter();
 
-  // Unwrap params using React.use() to access treeId
   const { id } = React.use(params);
 
   useEffect(() => {
@@ -77,21 +76,46 @@ export default function UpdateTree({ params }: { params: Promise<{ id: string }>
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-
+  
     if (!validateInputs()) {
       return;
     }
-
+  
     setIsSubmitting(true);
-
+  
     try {
-      await update(ref(db, `trees/${id}`), {
+      const treeRef = ref(db, `trees/${id}`);
+      const snapshot = await get(treeRef);
+  
+      if (!snapshot.exists()) {
+        throw new Error('Tree data not found.');
+      }
+  
+      const currentTreeData = snapshot.val();
+      const previousHeight = currentTreeData.height || null;
+  
+      const newHeightUpdate = {
+        height: treeData.height,
+        timestamp: serverTimestamp(),
+      };
+  
+      // Store the new height update in a subfield of heightUpdates
+      const updates = {
         ...treeData,
         location,
-      });
-
+        previousHeight,
+        lastUpdated: serverTimestamp(),
+        heightUpdates: {
+          ...currentTreeData.heightUpdates,
+          [`update_${Date.now()}`]: newHeightUpdate, // Using timestamp as a unique key for updates
+        },
+      };
+  
+      // Update the tree data with the new height and updates
+      await update(treeRef, updates);
+  
       setShowSuccessPopup(true);
-
+  
       // Redirect to /home after 2 seconds
       setTimeout(() => {
         router.push('/home');
@@ -102,6 +126,7 @@ export default function UpdateTree({ params }: { params: Promise<{ id: string }>
       setIsSubmitting(false);
     }
   };
+  
 
   return (
     <div className="bg-black min-h-screen w-svw flex justify-center">
@@ -115,6 +140,26 @@ export default function UpdateTree({ params }: { params: Promise<{ id: string }>
               value={treeData.name}
               onChange={(e) => setTreeData({ ...treeData, name: e.target.value })}
               placeholder="Tree Name"
+              disabled
+              className="bg-gray-400 text-black"
+            />
+          </div>
+
+          <div>
+            <Input
+              type="text"
+              value={treeData.previousHeight || ''}
+              placeholder="Previous Height"
+              disabled
+              className="bg-gray-400 text-black"
+            />
+          </div>
+
+          <div>
+            <Input
+              type="text"
+              value={treeData.lastUpdated ? new Date(treeData.lastUpdated).toLocaleString() : ''}
+              placeholder="Last Updated"
               disabled
               className="bg-gray-400 text-black"
             />
@@ -145,8 +190,7 @@ export default function UpdateTree({ params }: { params: Promise<{ id: string }>
           )}
 
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? <Spinner
-            className='w-10 h-10' /> : 'Submit'}
+            {isSubmitting ? <Spinner className="w-10 h-10" /> : 'Submit'}
           </Button>
         </form>
       </div>
@@ -160,7 +204,6 @@ export default function UpdateTree({ params }: { params: Promise<{ id: string }>
           </div>
         </div>
       )}
-      
     </div>
   );
 }
